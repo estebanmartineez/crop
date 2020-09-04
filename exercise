@@ -1,0 +1,64 @@
+const fs = require("fs")
+
+const fileStream = fs.createReadStream(`${__dirname}/words2.txt`)
+const writeStream = fs.createWriteStream(`${__dirname}/output.txt`)
+let fileContent = ''
+let circle = []
+let wordsBeginWith = {}
+
+fileStream.on('data', data => {
+    fileContent += data.toString()
+})
+
+fileStream.on('end', () => {
+    const dataWrite = searchCircle(fileContent.split("\n"))
+    if(!dataWrite) {
+        console.log('Circle not found')
+    }
+    dataWrite.forEach(data => writeStream.write(data + "\n"))
+})
+
+fileStream.on('error', err => {
+    console.log(err)
+})
+
+const searchCircle = wordsArray => {
+    let firstElementOfCircle = wordsArray.shift()
+    makeDictionary(wordsArray)
+    const circlePrint = getCircle(wordsArray, firstElementOfCircle)
+    console.log('circle',circlePrint)
+    return circlePrint
+}
+
+const makeDictionary = words => {
+    words.forEach((word,index) => {
+        let firstLetter = getFirstLetterOfWord(word)
+        wordsBeginWith[index] = `${firstLetter}`
+    })
+}
+
+const getLastLetterOfWord = word => word.substr(-1)
+const getFirstLetterOfWord = word => word[0]
+
+const getNextWordInCircle = wordSearch => {
+    const indexSearch = `${getLastLetterOfWord(wordSearch)}`
+    return Object.keys(wordsBeginWith).find(key => wordsBeginWith[key] === indexSearch)
+}
+
+const getCircle = (wordsArray, initialSearch) => {
+    try {
+        const headOfCircle = initialSearch
+        while (true) {
+            let indexWord = getNextWordInCircle(initialSearch)
+            circle.push(wordsArray[indexWord])
+            if(getLastLetterOfWord(wordsArray[indexWord]) === getFirstLetterOfWord(headOfCircle)) {
+                break
+            }
+            delete wordsBeginWith[indexWord]
+            initialSearch = wordsArray[indexWord]
+        }
+        return [headOfCircle, ...circle, headOfCircle]
+    } catch (e) {
+        console.log(e)
+    }
+}
